@@ -321,6 +321,8 @@ class Team:
             player (Player): The player to add.
         """
         if not self.__goalkeeper:
+            if self.get_player_by_name(player.name):
+                raise ValueError(f"Player {player.name} already added.")
             player.starting_position = "GK"
             player.position = "GK"
             self.__goalkeeper = player
@@ -428,22 +430,11 @@ class Team:
 def main():
     """ main """
     num_periods = 8
-    # 9/27
-    # defense = ["Arturo", "Asher", "Piero", "Teddy", "Brogan"]
-    # offense = ["Ottavio", "William", "Anderson", "Stephen", "Winston"]
-    # keepers = ["Charles", "Anderson", "Piero", "Stephen"]
-    # half_time_swaps = [["Piero", "Ottavio"],["Brogan", "Anderson"]]
-    # 10/11 - with Charles
-    defense = ["Asher", "Arturo", "Anderson", "Piero"]
-    offense = ["Brogan", "Daniel", "William", "Winston", "Teddy"]
-    keepers = ["Charles", "Brogan", "Anderson", "Piero"]
-    half_time_swaps = [["Teddy", "Anderson"], ["Brogan", "Piero"]]
-    # 10/11 - without Charles
-    # defense = ["Asher", "Teddy", "Piero"]
-    # offense = ["Brogan", "Stephen", "Winston", "William"]
-    # keepers = ["Anderson", "Brogan", "Anderson", "Stephen"]
-    # half_time_swaps = []
-
+    defense = ["Piero", "Teddy", "Stephen", "Asher"]
+    offense = ["Arturo", "William", "Winston", "Daniel", "Brogan"]
+    keepers = ["Anderson", "Brogan", "Anderson", "Stephen"]
+    half_time_swaps = [["Stephen", "Brogan"],
+                       ["Arturo", "Asher"]]
     team = Team("B4 Lions")
     for name in defense:
         player = Player(name)
