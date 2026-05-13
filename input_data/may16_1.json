@@ -1,0 +1,6 @@
+{
+	"defense": ["Piero", "Asher", "Ottavio", "Teddy", "Charles"],
+	"offense": ["Daniel", "Cal", "Isaac", "Brogan", "Chris"],
+	"keepers": ["Anderson", "Isaac", "Ottavio", "Charles"],
+	"swaps": [["Ottavio", "Brogan"]]
+}

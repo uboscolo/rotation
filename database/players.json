@@ -1,0 +1,112 @@
+{
+	"Piero": {
+		"defense": {
+			"favorite": "RB",
+			"alternate": "LB"
+		},
+		"offense": {
+			"favorite": "RW",
+			"alternate": "ST"
+		}
+	},
+	"Asher": {
+		"defense": {
+			"favorite": "CB",
+			"alternate": "LB"
+		},
+		"offense": {
+			"favorite": "RW",
+			"alternate": "ST"
+		}
+	},
+	"Teddy": {
+		"defense": {
+			"favorite": "LB",
+			"alternate": "CB"
+		},
+		"offense": {
+			"favorite": "LW",
+			"alternate": "RW"
+		}
+	},
+	"Daniel": {
+		"defense": {
+			"favorite": "CB",
+			"alternate": "RB"
+		},
+		"offense": {
+			"favorite": "ST",
+			"alternate": "LW"
+		}
+	},
+	"Cal": {
+		"defense": {
+			"favorite": "LB",
+			"alternate": "RB"
+		},
+		"offense": {
+			"favorite": "LW",
+			"alternate": "ST"
+		}
+	},
+	"Chris": {
+		"defense": {
+			"favorite": "RB",
+			"alternate": "LB"
+		},
+		"offense": {
+			"favorite": "RW",
+			"alternate": "ST"
+		}
+	},
+	"Anderson": {
+		"defense": {
+			"favorite": "RB",
+			"alternate": "LB"
+		},
+		"offense": {
+			"favorite": "RW",
+			"alternate": "LW"
+		}
+	},
+	"Charles": {
+		"defense": {
+			"favorite": "LB",
+			"alternate": "RB"
+		},
+		"offense": {
+			"favorite": "ST",
+			"alternate": "RW"
+		}
+	},
+	"Ottavio": {
+		"defense": {
+			"favorite": "LB",
+			"alternate": "RB"
+		},
+		"offense": {
+			"favorite": "RW",
+			"alternate": "LW"
+		}
+	},
+	"Isaac": {
+		"defense": {
+			"favorite": "RB",
+			"alternate": "LB"
+		},
+		"offense": {
+			"favorite": "RW",
+			"alternate": "LW"
+		}
+	},
+	"Brogan": {
+		"defense": {
+			"favorite": "RB",
+			"alternate": "LB"
+		},
+		"offense": {
+			"favorite": "LW",
+			"alternate": "RW"
+		}
+	}
+}

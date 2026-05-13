@@ -2,30 +2,15 @@
     This module provides utility functions for data processing.
     It includes functions for cleaning, transforming, and analyzing data.
 """
+import argparse
+from dataclasses import dataclass, field
+import json
+from pathlib import Path
 
-POSITIONS = {"Piero": {"defense": {"favorite": "RB", "alternate": "LB"},
-                       "offense": {"favorite": "RW", "alternate": "ST"}},
-             "Asher": {"defense": {"favorite": "CB", "alternate": "LB"},
-                       "offense": {"favorite": "RW", "alternate": "ST"}},
-             "Teddy": {"defense": {"favorite": "LB", "alternate": "CB"},
-                       "offense": {"favorite": "LW", "alternate": "RW"}},
-             "Daniel": {"defense": {"favorite": "CB", "alternate": "RB"},
-                        "offense": {"favorite": "ST", "alternate": "LW"}},
-             "Cal": {"defense": {"favorite": "LB", "alternate": "RB"},
-                     "offense": {"favorite": "LW", "alternate": "ST"}},
-             "Chris": {"defense": {"favorite": "RB", "alternate": "LB"},
-                       "offense": {"favorite": "RW", "alternate": "ST"}},
-             "Anderson": {"defense": {"favorite": "RB", "alternate": "LB"},
-                          "offense": {"favorite": "RW", "alternate": "LW"}},
-             "Charles": {"defense": {"favorite": "LB", "alternate": "RB"},
-                         "offense": {"favorite": "ST", "alternate": "RW"}},
-             "Ottavio": {"defense": {"favorite": "LB", "alternate": "RB"},
-                         "offense": {"favorite": "RW", "alternate": "LW"}},
-             "Isaac": {"defense": {"favorite": "RB", "alternate": "LB"},
-                       "offense": {"favorite": "RW", "alternate": "LW"}},
-             "Brogan": {"defense": {"favorite": "RB", "alternate": "LB"},
-                        "offense": {"favorite": "LW", "alternate": "RW"}},
-            }
+def load_positions() -> dict:
+    """Loads player position preferences from database/players.json."""
+    positions_file = Path(__file__).resolve().parent / "database" / "players.json"
+    return json.loads(positions_file.read_text(encoding="utf-8"))
 
 def rotate(period, players):
     """ rotate """
@@ -108,6 +93,17 @@ class Player:
             raise TypeError(f"Position {value} not valid, needs to be one of {valid_positions}")
         self.__starting_position = value
 
+
+@dataclass
+class UnitState:
+    """Mutable state for a unit across periods."""
+    starters: list = field(default_factory=list)
+    reserves: list = field(default_factory=list)
+    active_players: list = field(default_factory=list)
+    inactive_players: list = field(default_factory=list)
+    players_map: dict = field(default_factory=dict)
+    assigned_positions: dict = field(default_factory=dict)
+
 class Unit:
     """
     Represents a unit in a team, e.g. defense or offense
@@ -120,7 +116,7 @@ class Unit:
                         6: {1: [1,2,3], 2: [4,5,6], 3: [2,3,4], 4: [1,5,6],
                             5: [3,4,5], 6: [1,2,6], 7: [1,3,5], 8: [2,4,6]}}
 
-    def __init__(self, name: str, positions: list):
+    def __init__(self, name: str, positions: list, positions_db: dict):
         """
         Initializes a new Unit object.
 
@@ -132,12 +128,8 @@ class Unit:
         if len(positions) != self.num_starters:
             raise ValueError(f"Unexpected number of positions {positions}.")
         self.__positions: list = positions
-        self.__starters = []
-        self.__reserves = []
-        self.__active_players = []
-        self.__inactive_players = []
-        self.__players_map = {}
-        self.__assigned_positions = {}
+        self.__positions_db = positions_db
+        self.__state = UnitState()
 
     @property
     def name(self) -> str:
@@ -155,22 +147,22 @@ class Unit:
     @property
     def starters(self) -> list:
         """The unit's starters."""
-        return self.__starters
+        return self.__state.starters
 
     @property
     def reserves(self) -> list:
         """The unit's reserves."""
-        return self.__reserves
+        return self.__state.reserves
 
     @property
     def active_players(self) -> list:
         """The unit's active players."""
-        return self.__active_players
+        return self.__state.active_players
 
     @property
     def inactive_players(self) -> list:
         """The unit's inactive players."""
-        return self.__inactive_players
+        return self.__state.inactive_players
 
     def get_player_by_name(self, name: str) -> Player:
         """
@@ -179,7 +171,7 @@ class Unit:
         Args:
             name (str): The player's name.
         """
-        return self.__players_map.get(name)
+        return self.__state.players_map.get(name)
 
     def __get_position_choices(self, player_name: str):
         """
@@ -188,7 +180,7 @@ class Unit:
         Args:
             player_name (str): The player's name.
         """
-        units = POSITIONS.get(player_name)
+        units = self.__positions_db.get(player_name)
         if not units:
             raise ValueError(f"No position units found for {player_name}.")
         choices = units.get(self.__name)
@@ -206,16 +198,16 @@ class Unit:
             player_name (str): The player's name.
         """
         favorite, alternate = self.__get_position_choices(player_name)
-        if favorite not in self.__assigned_positions:
+        if favorite not in self.__state.assigned_positions:
             position = favorite
-        elif alternate not in self.__assigned_positions:
+        elif alternate not in self.__state.assigned_positions:
             position = alternate
         else:
             # Player not in a choice position
             for pos in self.__positions:
-                if pos not in self.__assigned_positions:
+                if pos not in self.__state.assigned_positions:
                     position = pos
-        self.__assigned_positions[position] = player_name
+        self.__state.assigned_positions[position] = player_name
         return position
 
     def add_player(self, new_player: Player) -> None:
@@ -225,10 +217,10 @@ class Unit:
         Args:
             new_player (Player): The player to add.
         """
-        if new_player in self.__starters or new_player in self.__reserves:
+        if new_player in self.__state.starters or new_player in self.__state.reserves:
             raise ValueError(f"Player {new_player.name} already in the {self.__name} unit.")
 
-        current_starters = len(self.__starters)
+        current_starters = len(self.__state.starters)
         if current_starters == self.num_starters:
             # Reserves
             new_player.position = "R"
@@ -237,8 +229,8 @@ class Unit:
         else:
             new_player.position = self.__set_position(new_player.name)
             new_player.starting_position = new_player.position
-            self.__starters.append(new_player)
-        self.__players_map[new_player.name] = new_player
+            self.__state.starters.append(new_player)
+        self.__state.players_map[new_player.name] = new_player
         # print(f"Adding {new_player.name} as {new_player.starting_position}")
 
     def swap(self, name: str, player: Player, **positions) -> None:
@@ -249,7 +241,7 @@ class Unit:
             name (str): The player's name to swap out
             player (Player): The player to swap in
         """
-        candidate = self.__players_map.get(name)
+        candidate = self.__state.players_map.get(name)
         default_starting_position = candidate.starting_position if candidate else None
         default_position = candidate.position if candidate else None
         starting_position = positions.get("starting_position", default_starting_position)
@@ -263,15 +255,15 @@ class Unit:
 
         # Handle case of goalkeeper
         if starting_position == "R":
-            self.__reserves[self.__reserves.index(candidate)] = player
+            self.__state.reserves[self.__state.reserves.index(candidate)] = player
         else:
-            self.__starters[self.__starters.index(candidate)] = player
+            self.__state.starters[self.__state.starters.index(candidate)] = player
         if position == "R":
-            self.__inactive_players[self.__inactive_players.index(candidate)] = player
+            self.__state.inactive_players[self.__state.inactive_players.index(candidate)] = player
         else:
-            self.__active_players[self.__active_players.index(candidate)] = player
-        self.__players_map.pop(name)
-        self.__players_map[player.name] = player
+            self.__state.active_players[self.__state.active_players.index(candidate)] = player
+        self.__state.players_map.pop(name)
+        self.__state.players_map[player.name] = player
 
     def __get_new_starters(self, period: int, size: int) -> list:
         """
@@ -285,16 +277,99 @@ class Unit:
         if size > self.num_starters:
             indices = self.rotate_map[size][period]
             for i in indices:
-                if i > len(self.__starters):
+                if i > len(self.__state.starters):
                     adjusted_index = i-1-self.num_starters
-                    new_starter = self.__reserves[adjusted_index]
+                    new_starter = self.__state.reserves[adjusted_index]
                 else:
-                    new_starter = self.__starters[i-1]
+                    new_starter = self.__state.starters[i-1]
                 new_starters.append(new_starter)
         else:
-            new_starters = self.__starters.copy()
+            new_starters = self.__state.starters.copy()
         return new_starters
-    
+
+    def __assign_with_alternative(self, target, player: Player,
+                                  new_targets: dict,
+                                  alternatives_available: dict) -> bool:
+        """Assign player using an available alternative slot when target is occupied."""
+        for alt_pos, alt_player in alternatives_available.items():
+            if alt_pos not in new_targets:
+                new_targets[alt_pos] = alt_player
+                new_targets[target] = player
+                return True
+        return False
+
+    def __assign_tuple_target(self, player: Player, target: tuple,
+                              new_targets: dict,
+                              alternatives_available: dict) -> bool:
+        """Assign player for tuple targets, preferring first then second position."""
+        pos1, pos2 = target
+        if pos1 not in new_targets:
+            new_targets[pos1] = player
+            return True
+        if pos2 not in new_targets:
+            new_targets[pos2] = player
+            return True
+        return self.__assign_with_alternative(target, player,
+                                              new_targets,
+                                              alternatives_available)
+
+    def __assign_single_target(self, player: Player, target: str,
+                               new_targets: dict,
+                               alternatives_available: dict) -> bool:
+        """Assign player for single targets, falling back to alternative slots."""
+        if target not in new_targets:
+            new_targets[target] = player
+            return True
+        return self.__assign_with_alternative(target, player,
+                                              new_targets,
+                                              alternatives_available)
+
+    def __collect_position_preferences(self) -> tuple:
+        """Collect initial targets, alternatives, and swap candidates."""
+        swappable = {}
+        alternatives_available = {}
+        new_targets = {}
+        points = 0
+        for player in self.__state.active_players:
+            fav, alt = self.__get_position_choices(player_name=player.name)
+            if player.position == fav:
+                if fav not in new_targets:
+                    new_targets[fav] = player
+                if alt not in alternatives_available:
+                    alternatives_available[alt] = player
+                continue
+            if player.position == alt:
+                points += 1
+                swappable[player] = fav
+                continue
+            points += 2
+            swappable[player] = (fav, alt)
+        return swappable, alternatives_available, new_targets, points
+
+    def __reassign_swappables(self, swappable: dict,
+                              alternatives_available: dict,
+                              new_targets: dict) -> bool:
+        """Try to assign each swappable player to a preferred target."""
+        reassign = False
+        for player, target in swappable.items():
+            if isinstance(target, tuple):
+                changed = self.__assign_tuple_target(player, target,
+                                                     new_targets,
+                                                     alternatives_available)
+            else:
+                changed = self.__assign_single_target(player, target,
+                                                      new_targets,
+                                                      alternatives_available)
+            reassign = reassign or changed
+        return reassign
+
+    def __apply_targets(self, new_targets: dict) -> None:
+        """Apply computed target positions to active players."""
+        for player in self.__state.active_players:
+            for new_pos, target_player in new_targets.items():
+                if player == target_player:
+                    player.position = new_pos
+
     def __validate_positions(self) -> None:
         """
         Rotates players
@@ -302,59 +377,16 @@ class Unit:
         Args:
             period (int): Period.
         """
-        swappable = {}
-        alternatives_available = {}
-        new_targets = {}
-        points = 0
-        reassign = False
-        for player in self.__active_players:
-            # print(f"{player.name} - position: {player.position}")
-            fav, alt = self.__get_position_choices(player_name=player.name)
-            if player.position == fav:
-                if fav not in new_targets:
-                    new_targets[fav] = player
-                if alt not in alternatives_available:
-                    alternatives_available[alt] = player
-            elif player.position == alt:
-                points += 1
-                swappable[player] = fav
-            else:
-                points += 2
-                swappable[player] = (fav, alt)
-        if points >= len(self.__active_players) and alternatives_available:
-            for player, target in swappable.items():
-                if isinstance(target, tuple):
-                    pos1, pos2 = target
-                    if pos1 in new_targets:
-                        if pos2 in new_targets:
-                            for alt_pos, alt_player in alternatives_available.items():
-                                if alt_pos not in new_targets:
-                                    new_targets[alt_pos] = alt_player
-                                    new_targets[target] = player
-                                    reassign = True
-                                    break
-                        else:
-                            new_targets[pos2] = player
-                            reassign = True
-                    else:
-                        new_targets[pos1] = player
-                        reassign = True
-                else:
-                    if target not in new_targets:
-                        new_targets[target] = player
-                        reassign = True
-                    else:
-                        for alt_pos, alt_player in alternatives_available.items():
-                            if alt_pos not in new_targets:
-                                new_targets[alt_pos] = alt_player
-                                new_targets[target] = player
-                                reassign = True
-                                break
+        swappable, alternatives_available, new_targets, points = (
+            self.__collect_position_preferences()
+        )
+        if points < len(self.__state.active_players) or not alternatives_available:
+            return
+        reassign = self.__reassign_swappables(swappable,
+                                              alternatives_available,
+                                              new_targets)
         if reassign:
-            for player in self.__active_players:
-                for new_pos, target_player in new_targets.items():
-                    if player == target_player:
-                        player.position = new_pos
+            self.__apply_targets(new_targets)
 
     def rotate(self, period: int) -> None:
         """
@@ -363,24 +395,24 @@ class Unit:
         Args:
             period (int): Period.
         """
-        size = len(self.__starters) + len(self.__reserves)
+        size = len(self.__state.starters) + len(self.__state.reserves)
         new_starters = self.__get_new_starters(period, size)
-        if not self.__active_players:
-            self.__active_players = new_starters
+        if not self.__state.active_players:
+            self.__state.active_players = new_starters
         else:
-            for player in self.__active_players:
+            for player in self.__state.active_players:
                 if player not in new_starters:
-                    self.__assigned_positions.pop(player.position)
+                    self.__state.assigned_positions.pop(player.position)
                     player.position = "R"
-                    self.__inactive_players.append(player)
-        if not self.__inactive_players:
-            self.__inactive_players = self.__reserves.copy()
+                    self.__state.inactive_players.append(player)
+        if not self.__state.inactive_players:
+            self.__state.inactive_players = self.__state.reserves.copy()
         else:
             for player in new_starters:
-                if player in self.__inactive_players:
+                if player in self.__state.inactive_players:
                     player.position = self.__set_position(player.name)
-                    self.__inactive_players.remove(player)
-        self.__active_players = new_starters
+                    self.__state.inactive_players.remove(player)
+        self.__state.active_players = new_starters
         # for p in self.__active_players:
         #    print(f"1. {p.name} -> {p.position}")
         self.__validate_positions()
@@ -392,7 +424,7 @@ class Team:
     Represents a team
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, positions_db: dict):
         """
         Initializes a new Team object.
 
@@ -403,8 +435,8 @@ class Team:
         self.__players = []
         self.__goalkeeper = None
         self.__goalkeeper_reserve = []
-        self.__defense: Unit = Unit("defense", ["LB", "CB", "RB"])
-        self.__offense: Unit = Unit("offense", ["LW", "ST", "RW"])
+        self.__defense: Unit = Unit("defense", ["LB", "CB", "RB"], positions_db)
+        self.__offense: Unit = Unit("offense", ["LW", "ST", "RW"], positions_db)
         self.__players_map = {}
 
     @property
@@ -493,8 +525,8 @@ class Team:
         Swaps players
 
         Args:
-            player_name1 (str): Player to swap. 
-            player_name2 (str): Player to swap. 
+            player_name1 (str): Player to swap.
+            player_name2 (str): Player to swap.
         """
         if self.__defense.get_player_by_name(player_name1):
             player1 = self.__defense.get_player_by_name(player_name1)
@@ -587,7 +619,7 @@ class Period:
     def positions(self) -> dict:
         """The positions of the period."""
         return self.__positions
-    
+
     def add_position(self, player_name: str, position: str) -> None:
         """
         Adds a player's position to the period
@@ -616,7 +648,7 @@ class Half:
     def number(self) -> int:
         """The number of the half."""
         return self.__number
-    
+
     def add_period(self, period: Period) -> None:
         """
         Adds a period to the half
@@ -679,47 +711,56 @@ class Game:
         for half in self.__halves:
             half.display()
 
-def main():
-    """ main """
-    num_periods = 8
-    # Option 1 - 11 players
-    defense = ["Asher", "Teddy", "Brogan", "Piero"]
-    offense = ["Daniel", "Chris", "Isaac", "Ottavio", "Cal"]
-    keepers = ["Anderson", "Isaac", "Brogan", "Isaac"]
-    half_time_swaps = [["Ottavio", "Brogan"]]
-    # half_time_swaps = []
-    team = Team("B4 Lions")
-    for name in defense:
-        player = Player(name)
-        team.add_player(player, "defense")
-    for name in offense:
-        player = Player(name)
-        team.add_player(player, "offense")
-    name = keepers.pop(0)
-    player = Player(name)
-    team.add_goalkeeper(player)
-    for name in keepers:
-        player = team.get_player_by_name(name)
-        team.add_goalkeeper(player)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Rotation")
+    parser.add_argument("--players_file",
+                        type=str,
+                        required=True,
+                        dest="players_file",
+                        help="Path to players file")
+    parser.add_argument("--num_periods",
+                        type=int,
+                        required=False,
+                        dest="num_periods",
+                        default=8,
+                        help="Number of periods in the game")
+    args = parser.parse_args()
+    in_file = args.players_file
+    with open(in_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+        defense = data.get("defense", [])
+        offense = data.get("offense", [])
+        keepers = data.get("keepers", [])
+        half_time_swaps = data.get("swaps", [])
+
+    num_periods = args.num_periods
+    team = Team("B4 Lions", load_positions())
+    for defender_name in defense:
+        defender_player = Player(defender_name)
+        team.add_player(defender_player, "defense")
+    for attacker_name in offense:
+        attacker_player = Player(attacker_name)
+        team.add_player(attacker_player, "offense")
+    starting_keeper_name = keepers.pop(0)
+    starting_keeper = Player(starting_keeper_name)
+    team.add_goalkeeper(starting_keeper)
+    for reserve_keeper_name in keepers:
+        reserve_keeper = team.get_player_by_name(reserve_keeper_name)
+        team.add_goalkeeper(reserve_keeper)
 
     new_game = Game()
-    for period in range(1, num_periods+1):
-        if period == 1:
+    for period_number in range(1, num_periods+1):
+        if period_number == 1:
             new_half = Half(1)
             new_game.add_half(new_half)
-        if period == 5:
+        if period_number == 5:
             new_half = Half(2)
             new_game.add_half(new_half)
             for swap in half_time_swaps:
                 team.swap(swap[0], swap[1])
-        team.rotate(period)
-        new_period = Period(period)
-        # print(f"Period: {period}")
-        for player in team.get_players():
-            # print(f"{player.position}: {player.name}")
-            new_period.add_position(player.name, player.position)
+        team.rotate(period_number)
+        new_period = Period(period_number)
+        for team_player in team.get_players():
+            new_period.add_position(team_player.name, team_player.position)
         new_half.add_period(new_period)
     new_game.display()
-
-if __name__ == "__main__":
-    main()
