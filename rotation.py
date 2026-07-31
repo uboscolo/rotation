@@ -7,37 +7,47 @@ from dataclasses import dataclass, field
 import json
 from pathlib import Path
 
-def load_positions() -> dict:
-    """Loads player position preferences from database/players.json."""
-    positions_file = Path(__file__).resolve().parent / "database" / "players.json"
+rotate_map: dict = {
+    3: {
+        4: {1: [1,2,3], 2: [1,2,4], 3: [1,3,4], 4: [2,3,4],
+            5: [1,2,3], 6: [1,2,4], 7: [1,3,4], 8: [2,3,4]},
+        5: {1: [1,2,3], 2: [1,4,5], 3: [2,3,4], 4: [1,2,5],
+            5: [3,4,5], 6: [1,2,4], 7: [1,3,5], 8: [2,4,5]},
+        6: {1: [1,2,3], 2: [4,5,6], 3: [2,3,4], 4: [1,5,6],
+            5: [3,4,5], 6: [1,2,6], 7: [1,3,5], 8: [2,4,6]},
+    },
+    5: {
+        6: {1: [1,2,3,4,5], 2: [1,2,3,4,6], 3: [1,2,3,5,6], 4: [1,2,4,5,6],
+            5: [1,3,4,5,6], 6: [2,3,4,5,6], 7: [1,2,3,4,5], 8: [1,2,3,4,6]},
+        7: {1: [1,2,3,4,5], 2: [1,2,3,6,7], 3: [1,4,5,6,7], 4: [2,3,4,5,6],
+            5: [1,2,3,4,7], 6: [1,2,5,6,7], 7: [3,4,5,6,7], 8: [1,2,3,4,5]},
+        8: {1: [1,2,3,4,5], 2: [1,2,6,7,8], 3: [3,4,5,6,7], 4: [1,2,3,4,8],
+            5: [1,5,6,7,8], 6: [2,3,4,5,6], 7: [1,2,3,7,8], 8: [4,5,6,7,8]},
+    },
+}
+
+available_positions: dict = {
+    "defense": {
+        3: ["LB", "CB", "RB"],
+    },
+    "offense": {
+        3: ["LW", "ST", "RW"],
+        5: ["LM", "RM", "LW", "ST", "RW"],
+    }
+
+}
+
+def load_positions(players_db: str) -> dict:
+    """Loads player position preferences from the specified database file.
+    
+    Args:
+        players_db (str): Path to the players database file.
+    
+    Returns:
+        dict: The position preferences for all players.
+    """
+    positions_file = Path(players_db)
     return json.loads(positions_file.read_text(encoding="utf-8"))
-
-def rotate(period, players):
-    """ rotate """
-    indices_map = {4: {1: [1,2,3],
-                       2: [1,2,4],
-                       3: [1,3,4],
-                       4: [2,3,4],
-                       5: [1,2,3],
-                       6: [1,2,4],
-                       7: [1,3,4],
-                       8: [2,3,4]}
-                      }
-    min_players = 3
-    max_players = 6
-    num_players = len(players)
-    ret_players = []
-    if num_players < min_players:
-        print(f"Error, not enough players: {num_players}")
-    elif num_players == min_players:
-        ret_players = players
-    elif num_players > max_players:
-        print(f"Error, too many players: {num_players}")
-    else:
-        indices = indices_map[num_players][period]
-        ret_players = [players[i-1] for i in indices]
-
-    return ret_players
 
 
 class Player:
@@ -55,6 +65,8 @@ class Player:
         self.__name: str = name
         self.__starting_position = None
         self.__position = None
+        self.__favorite_position = None
+        self.__alternate_position = None
 
     @property
     def name(self) -> str:
@@ -71,14 +83,11 @@ class Player:
 
     @property
     def position(self) -> str:
-        """The position of the player."""
+        """The current position of the player."""
         return self.__position
 
     @position.setter
     def position(self, value: str):
-        valid_positions = ["GK", "LB", "CB", "RB", "LW", "ST", "RW", "R"]
-        if value not in valid_positions:
-            raise TypeError(f"Position {value} not valid, needs to be one of {valid_positions}")
         self.__position = value
 
     @property
@@ -88,11 +97,25 @@ class Player:
 
     @starting_position.setter
     def starting_position(self, value: str):
-        valid_positions = ["GK", "LB", "CB", "RB", "LW", "ST", "RW", "R"]
-        if value not in valid_positions:
-            raise TypeError(f"Position {value} not valid, needs to be one of {valid_positions}")
         self.__starting_position = value
 
+    @property
+    def favorite_position(self) -> str:
+        """The favorite position of the player."""
+        return self.__favorite_position
+
+    @favorite_position.setter
+    def favorite_position(self, value: str):
+        self.__favorite_position = value
+
+    @property
+    def alternate_position(self) -> str:
+        """The alternate position of the player."""
+        return self.__alternate_position
+
+    @alternate_position.setter
+    def alternate_position(self, value: str):
+        self.__alternate_position = value
 
 @dataclass
 class UnitState:
@@ -108,28 +131,32 @@ class Unit:
     """
     Represents a unit in a team, e.g. defense or offense
     """
-    num_starters = 3
-    rotate_map: dict = {4: {1: [1,2,3], 2: [1,2,4], 3: [1,3,4], 4: [2,3,4],
-                            5: [1,2,3], 6: [1,2,4], 7: [1,3,4], 8: [2,3,4]},
-                        5: {1: [1,2,3], 2: [1,4,5], 3: [2,3,4], 4: [1,2,5],
-                            5: [3,4,5], 6: [1,2,4], 7: [1,3,5], 8: [2,4,5]},
-                        6: {1: [1,2,3], 2: [4,5,6], 3: [2,3,4], 4: [1,5,6],
-                            5: [3,4,5], 6: [1,2,6], 7: [1,3,5], 8: [2,4,6]}}
+    supported_starters = (3, 5)
 
-    def __init__(self, name: str, positions: list, positions_db: dict):
+    def __init__(self, name: str, num_starters: int):
         """
         Initializes a new Unit object.
 
         Args:
             name (str): The unit's name.
-            positions (list): The unit's positions, e.g. "LB", "CB", "RB".
+            num_starters (int): The number of starters in the unit.
         """
+        if name not in available_positions:
+            raise ValueError(f"Unit '{name}' is not a valid unit. "
+                             f"Choose from: {list(available_positions.keys())}.")
+        position_options = available_positions[name]
+        if num_starters not in position_options:
+            raise ValueError(f"Number of starters '{num_starters}' is not valid for unit '{name}'. "
+                             f"Choose from: {list(position_options.keys())}.")
         self.__name: str = name
-        if len(positions) != self.num_starters:
-            raise ValueError(f"Unexpected number of positions {positions}.")
-        self.__positions: list = positions
-        self.__positions_db = positions_db
+        self.__num_starters = num_starters
+        self.__positions = position_options[num_starters]
         self.__state = UnitState()
+
+    @property
+    def num_starters(self) -> int:
+        """The number of starters for this unit."""
+        return self.__num_starters
 
     @property
     def name(self) -> str:
@@ -173,41 +200,29 @@ class Unit:
         """
         return self.__state.players_map.get(name)
 
-    def __get_position_choices(self, player_name: str):
+    def __set_position(self, player: Player):
         """
-        Returns the position choices after looking up in the DB
+        Sets the position for the player based on their favorite and alternate positions.
 
         Args:
-            player_name (str): The player's name.
+            player (Player): The player to set the position for.
         """
-        units = self.__positions_db.get(player_name)
-        if not units:
-            raise ValueError(f"No position units found for {player_name}.")
-        choices = units.get(self.__name)
-        if not choices:
-            raise ValueError(f"No position choices found for {player_name}.")
-        favorite = choices.get("favorite")
-        alternate = choices.get("alternate")
-        return (favorite, alternate)
-
-    def __set_position(self, player_name: str):
-        """
-        Returns the position after looking up in the DB
-
-        Args:
-            player_name (str): The player's name.
-        """
-        favorite, alternate = self.__get_position_choices(player_name)
-        if favorite not in self.__state.assigned_positions:
+        favorite = player.favorite_position
+        alternate = player.alternate_position
+        position = None
+        if favorite is not None and favorite not in self.__state.assigned_positions:
             position = favorite
-        elif alternate not in self.__state.assigned_positions:
+        elif alternate is not None and alternate not in self.__state.assigned_positions:
             position = alternate
         else:
-            # Player not in a choice position
+            # Neither preferred position is free; take first available slot
             for pos in self.__positions:
                 if pos not in self.__state.assigned_positions:
                     position = pos
-        self.__state.assigned_positions[position] = player_name
+                    break
+        if position is None:
+            raise ValueError(f"No available position for player {player.name}.")
+        self.__state.assigned_positions[position] = player.name
         return position
 
     def add_player(self, new_player: Player) -> None:
@@ -227,7 +242,7 @@ class Unit:
             new_player.starting_position = new_player.position
             self.reserves.append(new_player)
         else:
-            new_player.position = self.__set_position(new_player.name)
+            new_player.position = self.__set_position(new_player)
             new_player.starting_position = new_player.position
             self.__state.starters.append(new_player)
         self.__state.players_map[new_player.name] = new_player
@@ -275,7 +290,28 @@ class Unit:
         """
         new_starters = []
         if size > self.num_starters:
-            indices = self.rotate_map[size][period]
+            rotate_by_size = rotate_map.get(self.num_starters, {})
+            if not rotate_by_size:
+                raise ValueError(
+                    f"No rotation configuration for {self.num_starters} starters."
+                )
+            period_map = rotate_by_size.get(size, {})
+            if not period_map:
+                raise ValueError(
+                    f"No rotation mapping for {self.num_starters} starters "
+                    f"and unit size {size}."
+                )
+
+            # Rotation tables are defined for one cycle; reuse them for longer games.
+            sorted_periods = sorted(period_map.keys())
+            cycle_length = len(sorted_periods)
+            normalized_period = ((period - 1) % cycle_length) + 1
+            indices = period_map.get(normalized_period)
+            if not indices:
+                raise ValueError(
+                    f"No rotation mapping for {self.num_starters} starters "
+                    f"and unit size {size} at period {period}."
+                )
             for i in indices:
                 if i > len(self.__state.starters):
                     adjusted_index = i-1-self.num_starters
@@ -331,19 +367,20 @@ class Unit:
         new_targets = {}
         points = 0
         for player in self.__state.active_players:
-            fav, alt = self.__get_position_choices(player_name=player.name)
-            if player.position == fav:
-                if fav not in new_targets:
-                    new_targets[fav] = player
-                if alt not in alternatives_available:
-                    alternatives_available[alt] = player
+            if player.favorite_position is None or player.alternate_position is None:
                 continue
-            if player.position == alt:
+            if player.position == player.favorite_position:
+                if player.favorite_position not in new_targets:
+                    new_targets[player.favorite_position] = player
+                if player.alternate_position not in alternatives_available:
+                    alternatives_available[player.alternate_position] = player
+                continue
+            if player.position == player.alternate_position:
                 points += 1
-                swappable[player] = fav
+                swappable[player] = player.favorite_position
                 continue
             points += 2
-            swappable[player] = (fav, alt)
+            swappable[player] = (player.favorite_position, player.alternate_position)
         return swappable, alternatives_available, new_targets, points
 
     def __reassign_swappables(self, swappable: dict,
@@ -410,7 +447,7 @@ class Unit:
         else:
             for player in new_starters:
                 if player in self.__state.inactive_players:
-                    player.position = self.__set_position(player.name)
+                    player.position = self.__set_position(player)
                     self.__state.inactive_players.remove(player)
         self.__state.active_players = new_starters
         # for p in self.__active_players:
@@ -424,19 +461,33 @@ class Team:
     Represents a team
     """
 
-    def __init__(self, name: str, positions_db: dict):
+    supported_starters = (7, 9)
+
+    def __init__(self, name: str, num_starters: int, positions_db: str):
         """
         Initializes a new Team object.
 
         Args:
             name (str): The team's name.
+            num_starters (int): Number of starters in the team.
+            positions_db (str): Path to the players database file.
         """
+        if num_starters not in self.supported_starters:
+            raise ValueError(f"Unsupported number of starters: {num_starters}. "
+                             f"Supported values are: {self.supported_starters}.")
+
+        if num_starters == 7:
+            self.__defense: Unit = Unit("defense", num_starters=3)
+            self.__offense: Unit = Unit("offense", num_starters=3)
+        elif num_starters == 9:
+            self.__defense: Unit = Unit("defense", num_starters=3)
+            self.__offense: Unit = Unit("offense", num_starters=5)
+
         self.__name: str = name
         self.__players = []
         self.__goalkeeper = None
         self.__goalkeeper_reserve = []
-        self.__defense: Unit = Unit("defense", ["LB", "CB", "RB"], positions_db)
-        self.__offense: Unit = Unit("offense", ["LW", "ST", "RW"], positions_db)
+        self.__positions_db = load_positions(positions_db)
         self.__players_map = {}
 
     @property
@@ -514,11 +565,38 @@ class Team:
         if new_player in self.__players:
             raise ValueError(f"Player {new_player.name} already in the team.")
 
+        if not self.__positions_db.get(new_player.name):
+            raise ValueError(f"Player {new_player.name} not found in the database.")
+        player_units = self.__positions_db[new_player.name]
+
+        if not player_units.get(unit_name):
+            raise ValueError(f"Player {new_player.name} not found in the {unit_name} unit.")
+        player_unit = player_units[unit_name]
+
+        favorite = player_unit.get("favorite")
+        if favorite is None:
+            raise ValueError(f"Player {new_player.name} has no favorite position in the {unit_name} unit.")
+        new_player.favorite_position = favorite
+
+        alternate = player_unit.get("alternate")
+        if alternate is None:
+            raise ValueError(f"Player {new_player.name} has no alternate position in the {unit_name} unit.")
+        new_player.alternate_position = alternate
+
         self.__players.append(new_player)
         self.__players_map[new_player.name] = new_player
         unit_map = {"defense": self.__defense, "offense": self.__offense}
         unit = unit_map.get(unit_name)
         unit.add_player(new_player)
+
+    def __update_preferences(self, player: Player, unit_name: str) -> None:
+        """Update a player's favorite/alternate to match their new unit."""
+        player_units = self.__positions_db.get(player.name, {})
+        unit_prefs = player_units.get(unit_name, {})
+        if unit_prefs.get("favorite"):
+            player.favorite_position = unit_prefs["favorite"]
+        if unit_prefs.get("alternate"):
+            player.alternate_position = unit_prefs["alternate"]
 
     def swap(self, player_name1: str, player_name2: str) -> None:
         """
@@ -541,6 +619,8 @@ class Team:
                              "position": player2.position}
                 self.__defense.swap(player_name1, player2)
                 self.__offense.swap(player_name2, player1, **positions)
+                self.__update_preferences(player2, "defense")
+                self.__update_preferences(player1, "offense")
         elif self.__offense.get_player_by_name(player_name1):
             player1 = self.__offense.get_player_by_name(player_name1)
             player2 = self.__defense.get_player_by_name(player_name2)
@@ -554,6 +634,8 @@ class Team:
                              "position": player2.position}
                 self.__offense.swap(player_name1, player2)
                 self.__defense.swap(player_name2, player1, **positions)
+                self.__update_preferences(player1, "defense")
+                self.__update_preferences(player2, "offense")
         else:
             # could it be goalkeeper
             if player_name1 != self.__goalkeeper.name:
@@ -570,10 +652,13 @@ class Team:
             force (bool): Forces the swap even if candidate not in any unit.
         """
         if candidate != self.__goalkeeper:
+            ex_keeper = self.__goalkeeper
             if self.__defense.get_player_by_name(candidate.name):
-                self.__defense.swap(candidate.name, self.__goalkeeper)
+                self.__defense.swap(candidate.name, ex_keeper)
+                self.__update_preferences(ex_keeper, "defense")
             elif self.__offense.get_player_by_name(candidate.name):
-                self.__offense.swap(candidate.name, self.__goalkeeper)
+                self.__offense.swap(candidate.name, ex_keeper)
+                self.__update_preferences(ex_keeper, "offense")
             else:
                 if not force:
                     raise ValueError(f"Candidate {candidate.name} not in team.")
@@ -718,12 +803,23 @@ if __name__ == "__main__":
                         required=True,
                         dest="players_file",
                         help="Path to players file")
+    parser.add_argument("--players_db",
+                        type=str,
+                        required=False,
+                        dest="players_db",
+                        default="database/players.json",
+                        help="Path to players database file")
     parser.add_argument("--num_periods",
                         type=int,
                         required=False,
                         dest="num_periods",
                         default=8,
                         help="Number of periods in the game")
+    parser.add_argument("--num_starters",
+                        type=int,
+                        required=True,
+                        dest="num_starters",
+                        help="Number of starters in the game")
     args = parser.parse_args()
     in_file = args.players_file
     with open(in_file, "r", encoding="utf-8") as f:
@@ -734,7 +830,7 @@ if __name__ == "__main__":
         half_time_swaps = data.get("swaps", [])
 
     num_periods = args.num_periods
-    team = Team("B4 Lions", load_positions())
+    team = Team("B4 Lions", args.num_starters, args.players_db)
     for defender_name in defense:
         defender_player = Player(defender_name)
         team.add_player(defender_player, "defense")

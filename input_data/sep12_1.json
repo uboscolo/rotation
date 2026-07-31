@@ -1,0 +1,21 @@
+{
+	"defense": ["Piero", 
+                "Asher", 
+                "Cobo", 
+                "Brogan", 
+                "Charles"],
+	"offense": ["Will",
+                "Raphael",
+                "Isaac",
+                "Cal", 
+                "Terrell", 
+                "Chris", 
+                "Prasid",
+                "Daniel"],
+	"keepers": ["Anderson", 
+                "Isaac", 
+                "Cobo", 
+                "Charles"],
+	"swaps": [["Anderson", "Cobo"],
+              ["Isaac", "Charles"]]
+}

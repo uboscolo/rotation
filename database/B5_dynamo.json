@@ -1,0 +1,142 @@
+{
+	"Piero": {
+		"defense": {
+			"favorite": "RB",
+			"alternate": "LB"
+		},
+		"offense": {
+			"favorite": "RM",
+			"alternate": "RW"
+		}
+	},
+	"Prasid": {
+		"defense": {
+			"favorite": "RB",
+			"alternate": "CB"
+		},
+		"offense": {
+			"favorite": "LW",
+			"alternate": "ST"
+		}
+	},
+	"Anderson": {
+		"defense": {
+			"favorite": "RB",
+			"alternate": "LB"
+		},
+		"offense": {
+			"favorite": "LM",
+			"alternate": "RW"
+		}
+	},
+	"Chris": {
+		"defense": {
+			"favorite": "RB",
+			"alternate": "LB"
+		},
+		"offense": {
+			"favorite": "RW",
+			"alternate": "LW"
+		}
+	},
+	"Asher": {
+		"defense": {
+			"favorite": "CB",
+			"alternate": "LB"
+		},
+		"offense": {
+			"favorite": "RW",
+			"alternate": "RM"
+		}
+	},
+	"Cobo": {
+		"defense": {
+			"favorite": "CB",
+			"alternate": "LB"
+		},
+		"offense": {
+			"favorite": "ST",
+			"alternate": "RW"
+		}
+	},
+	"Daniel": {
+		"defense": {
+			"favorite": "CB",
+			"alternate": "RB"
+		},
+		"offense": {
+			"favorite": "LW",
+			"alternate": "ST"
+		}
+	},
+	"Raphael": {
+		"defense": {
+			"favorite": "CB",
+			"alternate": "RB"
+		},
+		"offense": {
+			"favorite": "RM",
+			"alternate": "LM"
+		}
+	},
+	"Terrell": {
+		"defense": {
+			"favorite": "CB",
+			"alternate": "RB"
+		},
+		"offense": {
+			"favorite": "ST",
+			"alternate": "LW"
+		}
+	},
+	"Charles": {
+		"defense": {
+			"favorite": "LB",
+			"alternate": "CB"
+		},
+		"offense": {
+			"favorite": "LM",
+			"alternate": "LW"
+		}
+	},
+	"Brogan": {
+		"defense": {
+			"favorite": "LB",
+			"alternate": "CB"
+		},
+		"offense": {
+			"favorite": "RW",
+			"alternate": "ST"
+		}
+	},
+	"Cal": {
+		"defense": {
+			"favorite": "LB",
+			"alternate": "RB"
+		},
+		"offense": {
+			"favorite": "ST",
+			"alternate": "LW"
+		}
+	},
+	"Isaac": {
+		"defense": {
+			"favorite": "LB",
+			"alternate": "RB"
+		},
+		"offense": {
+			"favorite": "LW",
+			"alternate": "RW"
+		}
+	},
+	"Will": {
+		"defense": {
+			"favorite": "LB",
+			"alternate": "CB"
+		},
+		"offense": {
+			"favorite": "LM",
+			"alternate": "RM"
+		}
+	}
+}
