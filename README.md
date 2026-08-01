@@ -1,56 +1,91 @@
 # rotation
 
-This project generates a youth soccer substitution/position rotation plan.
+Generates a youth soccer rotation plan by period, including:
 
-The main script is `rotation.py`. It reads a game roster from a JSON file,
-applies position preferences from `database/players.json`, rotates players
-across periods, and prints the resulting lineup table for each half.
+- field position assignment per player
+- goalkeeper rotation
+- halftime player swaps
 
-## What `rotation.py` does
+The script prints one table per half showing each player's position for each period.
 
-1. Loads player position preferences from `database/players.json`.
-2. Reads game-day roster data from an input JSON file (`--players_file`):
-	- defense players
-	- offense players
-	- goalkeeper rotation list
-	- optional halftime swaps
-3. Builds a `Team` with:
-	- one goalkeeper on field
-	- defense unit (LB, CB, RB)
-	- offense unit (LW, ST, RW)
-4. Rotates players each period using predefined rotation maps.
+## How it works
+
+`rotation.py` does the following:
+
+1. Loads player position preferences from a player database JSON file.
+2. Loads game-day roster data from `--players_file`.
+3. Builds a team with defense, offense, and goalkeeper groups.
+4. Rotates active players each period using predefined rotation maps.
 5. Applies halftime swaps at period 5.
-6. Prints a table showing each player's position by period.
+6. Prints the final rotation table.
 
-## Input file format
+## Supported formats
 
-Example (like `input_data/may16_1.json`):
+### Players file (`--players_file`)
+
+Expected keys:
+
+- `defense`: list of defender names
+- `offense`: list of attacker names
+- `keepers`: list of goalkeeper names (first name starts in goal)
+- `swaps`: optional halftime swaps as `[player_a, player_b]`
+
+Example:
 
 ```json
 {
-  "defense": ["Piero", "Asher", "Ottavio", "Teddy", "Charles"],
-  "offense": ["Daniel", "Cal", "Isaac", "Brogan", "Chris"],
-  "keepers": ["Anderson", "Isaac", "Ottavio", "Charles"],
-  "swaps": [["Ottavio", "Brogan"], ["Charles", "Anderson"]]
+	"defense": ["Jules", "Raphael", "Dayot", "Theo", "Aurelien"],
+	"offense": ["Adrien", "Ousmane", "Antoine", "Kylian", "Olivier"],
+	"keepers": ["Hugo", "Jules", "Theo", "Adrien"],
+	"swaps": [["Theo", "Kylian"]]
 }
 ```
 
-## How to run
+### Player database (`--players_db`)
 
-From the project root:
+Each player must include unit-specific preferences:
+
+- `defense.favorite` and `defense.alternate`
+- `offense.favorite` and `offense.alternate`
+
+Example files in this repo:
+
+- `database/B4_lions.json`
+- `database/B5_dynamo.json`
+
+## Supported starter modes
+
+- `--num_starters 7`
+	- defense: 3 field starters
+	- offense: 3 field starters
+	- plus 1 goalkeeper
+- `--num_starters 9`
+	- defense: 3 field starters
+	- offense: 5 field starters
+	- plus 1 goalkeeper
+
+## Usage
+
+From the repository root:
 
 ```bash
-python3 rotation.py --players_file input_data/may16_1.json
+python3 rotation.py --players_file input_data/may16_1.json --players_db database/B4_lions.json --num_starters 7
 ```
 
-Optional argument:
+9-starter example:
 
 ```bash
-python3 rotation.py --players_file input_data/may16_1.json --num_periods 8
+python3 rotation.py --players_file input_data/sep12_1.json --players_db database/B5_dynamo.json --num_starters 9
 ```
 
-## Run tests
+Optional flag:
 
 ```bash
-python3 -m unittest discover -s test -p 'test_*.py'
+python3 rotation.py --players_file input_data/may16_1.json --players_db database/B4_lions.json --num_starters 7 --num_periods 8
+```
+
+## Tests
+
+```bash
+python3 -m unittest discover -s test -q
 ```

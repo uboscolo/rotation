@@ -743,13 +743,10 @@ class Half:
         """
         self.__periods.append(period)
 
-    def display(self) -> None:
-        """
-        Displays the half information.
-        """
-        print(f"Half {self.__number}")
-        print(f"{'':<12}", end="")
+    def get_table_data(self) -> tuple:
+        """Build header labels and per-player position rows for this half."""
         positions = {}
+        headers = []
         for period in self.__periods:
             for player_name, position in period.positions.items():
                 if player_name not in positions:
@@ -757,13 +754,25 @@ class Half:
                 else:
                     positions[player_name].append(position)
             if period.number % 4 == 1:
-                print(f"{'Starting':<12}", end="")
+                headers.append("Starting")
             elif period.number % 4 == 2:
-                print(f"{'1st sub':<12}", end="")
+                headers.append("1st sub")
             elif period.number % 4 == 3:
-                print(f"{'2nd sub':<12}", end="")
+                headers.append("2nd sub")
             else:
-                print(f"{'3rd sub':<12}")
+                headers.append("3rd sub")
+        return headers, positions
+
+    def display(self) -> None:
+        """
+        Displays the half information.
+        """
+        print(f"Half {self.__number}")
+        print(f"{'':<12}", end="")
+        headers, positions = self.get_table_data()
+        for i, header in enumerate(headers):
+            line_end = "" if i < len(headers) - 1 else "\n"
+            print(f"{header:<12}", end=line_end)
         for player_name, pos_list in positions.items():
             print(f"{player_name:<12}", end="")
             for pos in pos_list:
@@ -796,6 +805,53 @@ class Game:
         for half in self.__halves:
             half.display()
 
+    def write_docx(self, output_file: str) -> None:
+        """Write game rotation tables to a DOCX file."""
+        try:
+            from docx import Document
+            from docx.shared import Pt, RGBColor
+        except ImportError as exc:
+            raise ImportError(
+                "python-docx is required for DOCX export. Install it with: pip install python-docx"
+            ) from exc
+
+        document = Document()
+
+        def _set_cell_font_size(cell, size_pt: int, bold: bool = False) -> None:
+            for paragraph in cell.paragraphs:
+                for run in paragraph.runs:
+                    run.font.size = Pt(size_pt)
+                    run.font.bold = bold
+
+        for half in self.__halves:
+            half_label = "1st Half" if half.number == 1 else "2nd Half"
+            headers, positions = half.get_table_data()
+            table = document.add_table(rows=len(positions) + 2, cols=len(headers) + 1)
+            table.style = "Table Grid"
+            title_cell = table.cell(0, 0)
+            title_cell.text = half_label
+            for col in range(1, len(headers) + 1):
+                title_cell = title_cell.merge(table.cell(0, col))
+            for paragraph in table.cell(0, 0).paragraphs:
+                for run in paragraph.runs:
+                    run.font.size = Pt(22)
+                    run.font.bold = True
+                    run.font.color.rgb = RGBColor(0, 0, 0)
+
+            table.cell(1, 0).text = "Player"
+            _set_cell_font_size(table.cell(1, 0), 16, bold=True)
+            for i, header in enumerate(headers, start=1):
+                table.cell(1, i).text = header
+                _set_cell_font_size(table.cell(1, i), 16, bold=True)
+            for row_idx, (player_name, pos_list) in enumerate(positions.items(), start=2):
+                table.cell(row_idx, 0).text = player_name
+                _set_cell_font_size(table.cell(row_idx, 0), 16)
+                for col_idx, pos in enumerate(pos_list, start=1):
+                    table.cell(row_idx, col_idx).text = str(pos)
+                    _set_cell_font_size(table.cell(row_idx, col_idx), 16)
+            document.add_paragraph("")
+        document.save(output_file)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Rotation")
     parser.add_argument("--players_file",
@@ -809,17 +865,23 @@ if __name__ == "__main__":
                         dest="players_db",
                         default="database/players.json",
                         help="Path to players database file")
+    parser.add_argument("--num_starters",
+                        type=int,
+                        required=True,
+                        dest="num_starters",
+                        help="Number of starters in the game")
     parser.add_argument("--num_periods",
                         type=int,
                         required=False,
                         dest="num_periods",
                         default=8,
                         help="Number of periods in the game")
-    parser.add_argument("--num_starters",
-                        type=int,
-                        required=True,
-                        dest="num_starters",
-                        help="Number of starters in the game")
+    parser.add_argument("--docx_file",
+                        type=str,
+                        required=False,
+                        dest="docx_file",
+                        default=None,
+                        help="Optional path to write a DOCX rotation report")
     args = parser.parse_args()
     in_file = args.players_file
     with open(in_file, "r", encoding="utf-8") as f:
@@ -860,3 +922,6 @@ if __name__ == "__main__":
             new_period.add_position(team_player.name, team_player.position)
         new_half.add_period(new_period)
     new_game.display()
+    if args.docx_file:
+        new_game.write_docx(args.docx_file)
+        print(f"DOCX report written to {args.docx_file}")
