@@ -5,6 +5,7 @@ Generates a youth soccer rotation plan by period, including:
 - field position assignment per player
 - goalkeeper rotation
 - halftime player swaps
+- optional DOCX export with one table per half
 
 The script prints one table per half showing each player's position for each period.
 
@@ -18,6 +19,7 @@ The script prints one table per half showing each player's position for each per
 4. Rotates active players each period using predefined rotation maps.
 5. Applies halftime swaps at period 5.
 6. Prints the final rotation table.
+7. Optionally writes a DOCX game plan.
 
 ## Supported formats
 
@@ -82,6 +84,27 @@ Optional flag:
 
 ```bash
 python3 rotation.py --players_file input_data/may16_1.json --players_db database/B4_lions.json --num_starters 7 --num_periods 8
+```
+
+DOCX export example (writes to `output/`):
+
+```bash
+python3 rotation.py --players_file input_data/sep12_1.json --players_db database/B5_dynamo.json --num_starters 9 --docx_file output/sep12_rotation.docx
+```
+
+## DOCX output
+
+Use `--docx_file <path>` to generate a Word file.
+
+- One table per half
+- `1st Half` / `2nd Half` appears inside each table in its own merged row
+- Header row (`Player`, `Starting`, `1st sub`, `2nd sub`, `3rd sub`) is bold
+- Player/position cells are formatted for readability
+
+Install dependency once:
+
+```bash
+python3 -m pip install python-docx
 ```
 
 ## Tests
