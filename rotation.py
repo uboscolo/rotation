@@ -238,7 +238,7 @@ class Unit:
         current_starters = len(self.__state.starters)
         if current_starters == self.num_starters:
             # Reserves
-            new_player.position = "R"
+            new_player.position = "-"
             new_player.starting_position = new_player.position
             self.reserves.append(new_player)
         else:
@@ -269,11 +269,11 @@ class Unit:
         player.position = position
 
         # Handle case of goalkeeper
-        if starting_position == "R":
+        if starting_position == "-":
             self.__state.reserves[self.__state.reserves.index(candidate)] = player
         else:
             self.__state.starters[self.__state.starters.index(candidate)] = player
-        if position == "R":
+        if position == "-":
             self.__state.inactive_players[self.__state.inactive_players.index(candidate)] = player
         else:
             self.__state.active_players[self.__state.active_players.index(candidate)] = player
@@ -440,7 +440,7 @@ class Unit:
             for player in self.__state.active_players:
                 if player not in new_starters:
                     self.__state.assigned_positions.pop(player.position)
-                    player.position = "R"
+                    player.position = "-"
                     self.__state.inactive_players.append(player)
         if not self.__state.inactive_players:
             self.__state.inactive_players = self.__state.reserves.copy()
@@ -823,7 +823,7 @@ class Game:
                     run.font.size = Pt(size_pt)
                     run.font.bold = bold
 
-        for half in self.__halves:
+        for half_idx, half in enumerate(self.__halves):
             half_label = "1st Half" if half.number == 1 else "2nd Half"
             headers, positions = half.get_table_data()
             table = document.add_table(rows=len(positions) + 2, cols=len(headers) + 1)
@@ -834,22 +834,26 @@ class Game:
                 title_cell = title_cell.merge(table.cell(0, col))
             for paragraph in table.cell(0, 0).paragraphs:
                 for run in paragraph.runs:
-                    run.font.size = Pt(22)
+                    run.font.size = Pt(24)
                     run.font.bold = True
                     run.font.color.rgb = RGBColor(0, 0, 0)
 
             table.cell(1, 0).text = "Player"
-            _set_cell_font_size(table.cell(1, 0), 16, bold=True)
+            _set_cell_font_size(table.cell(1, 0), 18, bold=True)
             for i, header in enumerate(headers, start=1):
                 table.cell(1, i).text = header
-                _set_cell_font_size(table.cell(1, i), 16, bold=True)
+                _set_cell_font_size(table.cell(1, i), 18, bold=True)
             for row_idx, (player_name, pos_list) in enumerate(positions.items(), start=2):
                 table.cell(row_idx, 0).text = player_name
-                _set_cell_font_size(table.cell(row_idx, 0), 16)
+                _set_cell_font_size(table.cell(row_idx, 0), 18)
                 for col_idx, pos in enumerate(pos_list, start=1):
                     table.cell(row_idx, col_idx).text = str(pos)
-                    _set_cell_font_size(table.cell(row_idx, col_idx), 16)
-            document.add_paragraph("")
+                    _set_cell_font_size(table.cell(row_idx, col_idx), 18)
+            # Add page break after each half except the last one
+            if half_idx < len(self.__halves) - 1:
+                document.add_page_break()
+            else:
+                document.add_paragraph("")
         document.save(output_file)
 
 if __name__ == "__main__":
