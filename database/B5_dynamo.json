@@ -11,12 +11,12 @@
 	},
 	"Prasid": {
 		"defense": {
-			"favorite": "RB",
-			"alternate": "CB"
+			"favorite": "CB",
+			"alternate": "RB"
 		},
 		"offense": {
 			"favorite": "LW",
-			"alternate": "ST"
+			"alternate": "LM"
 		}
 	},
 	"Anderson": {
@@ -25,7 +25,7 @@
 			"alternate": "LB"
 		},
 		"offense": {
-			"favorite": "LM",
+			"favorite": "RM",
 			"alternate": "RW"
 		}
 	},
@@ -52,7 +52,7 @@
 	"Cobo": {
 		"defense": {
 			"favorite": "CB",
-			"alternate": "LB"
+			"alternate": "RB"
 		},
 		"offense": {
 			"favorite": "ST",
@@ -65,38 +65,38 @@
 			"alternate": "RB"
 		},
 		"offense": {
-			"favorite": "LW",
-			"alternate": "ST"
+			"favorite": "ST",
+			"alternate": "LW"
 		}
 	},
 	"Raphael": {
 		"defense": {
-			"favorite": "CB",
+			"favorite": "LB",
 			"alternate": "RB"
 		},
 		"offense": {
-			"favorite": "RM",
+			"favorite": "LW",
 			"alternate": "LM"
 		}
 	},
 	"Terrell": {
 		"defense": {
 			"favorite": "CB",
-			"alternate": "RB"
+			"alternate": "LB"
 		},
 		"offense": {
 			"favorite": "ST",
-			"alternate": "LW"
+			"alternate": "RW"
 		}
 	},
 	"Charles": {
 		"defense": {
-			"favorite": "LB",
-			"alternate": "CB"
+			"favorite": "CB",
+			"alternate": "LB"
 		},
 		"offense": {
 			"favorite": "LM",
-			"alternate": "LW"
+			"alternate": "ST"
 		}
 	},
 	"Brogan": {
@@ -105,8 +105,8 @@
 			"alternate": "CB"
 		},
 		"offense": {
-			"favorite": "RW",
-			"alternate": "ST"
+			"favorite": "LM",
+			"alternate": "LW"
 		}
 	},
 	"Cal": {
@@ -125,18 +125,28 @@
 			"alternate": "RB"
 		},
 		"offense": {
-			"favorite": "LW",
+			"favorite": "RM",
 			"alternate": "RW"
 		}
 	},
-	"Will": {
+	"William": {
 		"defense": {
-			"favorite": "LB",
-			"alternate": "CB"
+			"favorite": "CB",
+			"alternate": "RB"
 		},
 		"offense": {
 			"favorite": "LM",
 			"alternate": "RM"
+		}
+	},
+	"Kaisar": {
+		"defense": {
+			"favorite": "LB",
+			"alternate": "RB"
+		},
+		"offense": {
+			"favorite": "LW",
+			"alternate": "RW"
 		}
 	}
 }

@@ -329,6 +329,9 @@ class Unit:
         """Assign player using an available alternative slot when target is occupied."""
         for alt_pos, alt_player in alternatives_available.items():
             if alt_pos not in new_targets:
+                for assigned_pos, assigned_player in list(new_targets.items()):
+                    if assigned_player == alt_player:
+                        del new_targets[assigned_pos]
                 new_targets[alt_pos] = alt_player
                 new_targets[target] = player
                 return True
@@ -345,9 +348,7 @@ class Unit:
         if pos2 not in new_targets:
             new_targets[pos2] = player
             return True
-        return self.__assign_with_alternative(target, player,
-                                              new_targets,
-                                              alternatives_available)
+        return False
 
     def __assign_single_target(self, player: Player, target: str,
                                new_targets: dict,
@@ -406,6 +407,19 @@ class Unit:
             for new_pos, target_player in new_targets.items():
                 if player == target_player:
                     player.position = new_pos
+        used_positions = set()
+        for player in self.__state.active_players:
+            if player.position in used_positions:
+                player.position = next(
+                    position for position in self.__positions
+                    if position not in used_positions
+                )
+            used_positions.add(player.position)
+        self.__state.assigned_positions = {
+            player.position: player.name
+            for player in self.__state.active_players
+            if player.position != "-"
+        }
 
     def __validate_positions(self) -> None:
         """
@@ -432,6 +446,11 @@ class Unit:
         Args:
             period (int): Period.
         """
+        self.__state.assigned_positions = {
+            player.position: player.name
+            for player in self.__state.active_players
+            if player.position != "-"
+        }
         size = len(self.__state.starters) + len(self.__state.reserves)
         new_starters = self.__get_new_starters(period, size)
         if not self.__state.active_players:
@@ -439,7 +458,7 @@ class Unit:
         else:
             for player in self.__state.active_players:
                 if player not in new_starters:
-                    self.__state.assigned_positions.pop(player.position)
+                    self.__state.assigned_positions.pop(player.position, None)
                     player.position = "-"
                     self.__state.inactive_players.append(player)
         if not self.__state.inactive_players:
