@@ -23,6 +23,8 @@ rotate_map: dict = {
             5: [1,2,3,4,7], 6: [1,2,5,6,7], 7: [3,4,5,6,7], 8: [1,2,3,4,5]},
         8: {1: [1,2,3,4,5], 2: [1,2,6,7,8], 3: [3,4,5,6,7], 4: [1,2,3,4,8],
             5: [1,5,6,7,8], 6: [2,3,4,5,6], 7: [1,2,3,7,8], 8: [4,5,6,7,8]},
+        9: {1: [1,2,3,4,5], 2: [1,6,7,8,9], 3: [2,3,4,5,6], 4: [1,2,7,8,9],
+            5: [3,4,5,6,7], 6: [1,2,3,8,9], 7: [4,5,6,7,8], 8: [1,2,3,4,9]}
     },
 }
 
@@ -660,6 +662,8 @@ class Team:
             if player_name1 != self.__goalkeeper.name:
                 raise ValueError(f"Player to swap not found: {player_name1}.")
             player2 = self.__defense.get_player_by_name(player_name2)
+            if not player2:
+                raise ValueError(f"Player2 {player_name2} not in defense.")
             self.__swap_keeper(player2)
 
     def __swap_keeper(self, candidate: Player, force: bool = False) -> None:
@@ -692,10 +696,14 @@ class Team:
         Args:
             period (int): Period.
         """
+        candidate = None
         if period < 1 or period > 8:
             raise ValueError(f"Unexpected period {period}.")
         if period > 1 and period % 2 == 1:
-            candidate = self.__goalkeeper_reserve.pop(0)
+            try:
+                candidate = self.__goalkeeper_reserve.pop(0)
+            except IndexError:
+                candidate = self.__goalkeeper
             self.__swap_keeper(candidate)
         self.__defense.rotate(period)
         self.__offense.rotate(period)

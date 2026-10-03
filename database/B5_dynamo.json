@@ -12,7 +12,7 @@
 	"Prasid": {
 		"defense": {
 			"favorite": "CB",
-			"alternate": "RB"
+			"alternate": "LB"
 		},
 		"offense": {
 			"favorite": "LM",
@@ -121,8 +121,8 @@
 	},
 	"William": {
 		"defense": {
-			"favorite": "CB",
-			"alternate": "RB"
+			"favorite": "LB",
+			"alternate": "CB"
 		},
 		"offense": {
 			"favorite": "LW",
@@ -136,6 +136,16 @@
 		},
 		"offense": {
 			"favorite": "LM",
+			"alternate": "RM"
+		}
+	},
+	"Cobo": {
+		"defense": {
+			"favorite": "CB",
+			"alternate": "RB"
+		},
+		"offense": {
+			"favorite": "ST",
 			"alternate": "RM"
 		}
 	}
